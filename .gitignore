@@ -1,0 +1,18 @@
+.env
+.env.*
+!.env.example
+.superpowers/
+.dev.vars
+.dev.vars.*
+node_modules/
+dist/
+coverage/
+work/
+outputs/
+*.tsbuildinfo
+.DS_Store
+.wrangler/
+ios/build/
+xcuserdata/
+*.xcuserstate
+/src/styles 2.css

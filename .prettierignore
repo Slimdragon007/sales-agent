@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+work
+outputs
+.superpowers
+package-lock.json
+docs/design/*.png
+worker-configuration.d.ts

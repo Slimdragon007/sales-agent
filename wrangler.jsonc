@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "slim-sales-agent-preview",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": true,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "VOICE_SAFETY_LEDGER",
+        "class_name": "VoiceSafetyLedger",
+      },
+    ],
+  },
+  "exports": {
+    "VoiceSafetyLedger": {
+      "type": "durable-object",
+      "storage": "sqlite",
+    },
+  },
+  "secrets": {
+    "required": [
+      "OPENAI_API_KEY",
+      "OPENAI_PROJECT_ID",
+      "OPENAI_WEBHOOK_SECRET",
+      "PREVIEW_PASSWORD",
+      "TWILIO_ACCOUNT_SID",
+      "TWILIO_API_KEY_SID",
+      "TWILIO_API_KEY_SECRET",
+      "TWILIO_FROM_NUMBER",
+      "TWILIO_VERIFIED_NUMBER",
+    ],
+  },
+}
