@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Block commits containing credential-shaped strings.
+#
+# GitHub's secret scanning is free on public repos and a paid add-on on private
+# ones. This is the free equivalent, and it is strictly better in one way: it
+# refuses the commit instead of alerting after the secret is already pushed.
+#
+# Bypass with `git commit --no-verify` when you genuinely need to.
+set -uo pipefail
+
+# Never scan this file. It necessarily contains every pattern it looks for, so
+# scanning itself blocks its own commit, and blocks any doc that quotes a
+# credential format. A scanner is not a credential.
+SELF=".githooks/pre-commit"
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -vxF "$SELF" || true)
+[ -z "$STAGED" ] && exit 0
+
+DIFF=$(git diff --cached -U0 --no-color -- $STAGED 2>/dev/null | grep '^+' || true)
+[ -z "$DIFF" ] && exit 0
+
+# Canary. A scanner that silently stops matching reports every commit as clean,
+# which is indistinguishable from working. Prove it can find a known secret
+# before trusting it to say there are none.
+#
+# Assembled at runtime rather than written literally: a literal would be a real
+# match sitting in this file, which is exactly the problem SELF works around.
+# Belt and braces, so the canary survives someone renaming or relocating this
+# hook and breaking the SELF exclusion.
+canary="sk-proj-$(printf 'A%.0s' {1..28})"
+if ! printf '%s\n' "$canary" | grep -qE 'sk-proj-[A-Za-z0-9_-]{20,}'; then
+  echo "pre-commit: scanner self-test FAILED. Refusing to certify this commit." >&2
+  exit 1
+fi
+
+found=0
+check() {
+  local pattern="$1" label="$2" hits
+  hits=$(printf '%s\n' "$DIFF" | grep -oE "$pattern" | sort -u || true)
+  [ -z "$hits" ] && return
+  if [ "$found" -eq 0 ]; then
+    echo "" >&2
+    echo "  COMMIT BLOCKED: credential-shaped strings in staged changes" >&2
+    echo "" >&2
+  fi
+  found=1
+  echo "  $label" >&2
+  # Print a short prefix only. Never echo the full value, or the secret lands
+  # in terminal scrollback and shell history.
+  printf '%s\n' "$hits" | head -3 | cut -c1-14 | sed 's/^/      /' >&2
+}
+
+check 'sk-proj-[A-Za-z0-9_-]{20,}'    'OpenAI project key'
+check 'sk-svcacct-[A-Za-z0-9_-]{20,}' 'OpenAI service-account key'
+check 'sk-ant-[A-Za-z0-9_-]{20,}'     'Anthropic API key'
+check 'ops_[A-Za-z0-9]{30,}'          '1Password service-account token'
+check 'ghp_[A-Za-z0-9]{30,}'          'GitHub personal access token'
+check 'github_pat_[A-Za-z0-9_]{30,}'  'GitHub fine-grained PAT'
+check 'sk_live_[A-Za-z0-9]{20,}'      'Stripe live secret key'
+check 'rk_live_[A-Za-z0-9]{20,}'      'Stripe live restricted key'
+check 'whsec_[A-Za-z0-9]{20,}'        'webhook signing secret'
+check 'AC[0-9a-f]{32}'                'Twilio Account SID'
+check 'SK[0-9a-f]{32}'                'Twilio API Key SID'
+check 'sbp_[A-Za-z0-9]{30,}'          'Supabase access token'
+check 'eyJhbGciOi[A-Za-z0-9_-]{20,}'  'JWT (Supabase service_role or similar)'
+check 'AIza[A-Za-z0-9_-]{30,}'        'Google API key'
+check 'xox[baprs]-[A-Za-z0-9-]{10,}'  'Slack token'
+check 'BEGIN [A-Z ]*PRIVATE KEY'      'private key block'
+
+if [ "$found" -eq 1 ]; then
+  echo "" >&2
+  echo "  Secrets belong in 1Password, referenced from .cursor/secrets.tpl." >&2
+  echo "  If this is a test fixture or a false positive:" >&2
+  echo "      git commit --no-verify" >&2
+  echo "" >&2
+  exit 1
+fi
+
+exit 0

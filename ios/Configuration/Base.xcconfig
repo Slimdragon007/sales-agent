@@ -1,0 +1,2 @@
+SLIM_SALES_AGENT_BUNDLE_ID = ai.flowstateinc.slimsalesagent
+SLIM_SALES_AGENT_TEST_BUNDLE_ID = ai.flowstateinc.slimsalesagent.tests

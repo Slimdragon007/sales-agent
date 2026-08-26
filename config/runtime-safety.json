@@ -1,0 +1,25 @@
+{
+  "voiceEnabled": true,
+  "platformHardSpendLimit": {
+    "confirmed": true,
+    "monthlyUsd": 10,
+    "confirmedAt": "2026-07-30T06:26:00.000Z"
+  },
+  "limits": {
+    "maxCallMinutes": 15,
+    "maxDailyPaidTests": 10,
+    "maxConcurrentSessions": 1
+  },
+  "phonePilot": {
+    "enabled": true,
+    "maxCalls": 20,
+    "maxCallMinutes": 5,
+    "maxConcurrentCalls": 1,
+    "maxEstimatedSpendUsd": 25,
+    "reservedUsdPerCall": 1,
+    "calendar": {
+      "enabled": true,
+      "allowWrites": true
+    }
+  }
+}
